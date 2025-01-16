@@ -99,7 +99,6 @@ public class MainActivity extends AppCompatActivity {
                         // Eğer kullanıcı bir ebeveynin altında bulunursa "Controlled" olarak ata
                         saveRoleToPreferences("Controlled");
                         currentUserRole = "Controlled"; // Rolü global değişkene kaydet
-                        sendStoredTokenToServer(); // Token'i gönder
                         startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
                         finish();
                         roleFound = true;
@@ -112,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
                     // Eğer kullanıcı bir ebeveynin altında değilse varsayılan olarak Parent ata
                     assignDefaultRole(userId);
                     currentUserRole = "Parent"; // Rolü global değişkene kaydet
-                    sendStoredTokenToServer(); // Token'i gönder
                 }
             } else {
                 Log.e("CheckUserRole", "Firebase rol kontrolünde hata oluştu: " + task.getException().getMessage());
@@ -120,6 +118,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+
+
+
+
+
 
     private void assignDefaultRole(String userId) {
         // Varsayılan olarak "Parent" rolünü ata ve SharedPreferences'a kaydet
@@ -287,6 +291,13 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MainActivity", "Token bulunamadı, işlem yapılmadı.");
         }
     }
+
+
+
+
+
+
+
 
 }
 
