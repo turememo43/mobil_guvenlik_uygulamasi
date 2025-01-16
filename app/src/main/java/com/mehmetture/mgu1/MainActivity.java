@@ -25,9 +25,6 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference databaseReference;
 
-    private String currentUserRole = null; // Kullanıcının rolünü saklamak için değişken
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,8 +39,6 @@ public class MainActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.passwordEditText);
         loginButton = findViewById(R.id.loginButton);
         registerButton = findViewById(R.id.registerButton);
-
-
 
         // Kullanıcı Zaten Giriş Yapmış mı Kontrol Et
         checkUserLoggedIn();
@@ -95,10 +90,8 @@ public class MainActivity extends AppCompatActivity {
                 for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
                     // Ebeveynin children altındaki verilerini kontrol et
                     if (parentSnapshot.child("children").hasChild(userId)) {
-                        Log.d("CheckUserRole", "Controlled rolü bulundu. Parent UID: " + parentSnapshot.getKey());
                         // Eğer kullanıcı bir ebeveynin altında bulunursa "Controlled" olarak ata
                         saveRoleToPreferences("Controlled");
-                        currentUserRole = "Controlled"; // Rolü global değişkene kaydet
                         startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
                         finish();
                         roleFound = true;
@@ -107,20 +100,15 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (!roleFound) {
-                    Log.d("CheckUserRole", "Controlled rolü bulunamadı. Kullanıcı Parent olarak atanıyor.");
                     // Eğer kullanıcı bir ebeveynin altında değilse varsayılan olarak Parent ata
                     assignDefaultRole(userId);
-                    currentUserRole = "Parent"; // Rolü global değişkene kaydet
                 }
             } else {
-                Log.e("CheckUserRole", "Firebase rol kontrolünde hata oluştu: " + task.getException().getMessage());
+                Log.e("DEBUG", "Firebase rol kontrolünde hata oluştu: " + task.getException().getMessage());
                 Toast.makeText(MainActivity.this, "Rol kontrolü sırasında hata oluştu!", Toast.LENGTH_SHORT).show();
             }
         });
     }
-
-
-
 
 
 
@@ -227,77 +215,68 @@ public class MainActivity extends AppCompatActivity {
 
         if (tempToken != null) {
             Log.d("MainActivity", "Token bulundu: " + tempToken);
+            Log.d("MainActivity", "Rol kontrol ediliyor...");
+            FirebaseAuth auth = FirebaseAuth.getInstance();
+            FirebaseUser currentUser = auth.getCurrentUser();
 
-            if (currentUserRole != null) {
-                Log.d("MainActivity", "Rol bilgisi bulundu: " + currentUserRole);
+            if (currentUser != null) {
+                String userId = currentUser.getUid(); // Kullanıcının UID'si
+                DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userId);
 
-                FirebaseAuth auth = FirebaseAuth.getInstance();
-                FirebaseUser currentUser = auth.getCurrentUser();
+                // Kullanıcının rolünü kontrol et
+                userRef.child("role").get().addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult().exists()) {
+                        String role = task.getResult().getValue(String.class);
 
-                if (currentUser != null) {
-                    String userId = currentUser.getUid();
-                    DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userId);
-
-                    if ("Parent".equals(currentUserRole)) {
-                        // Ebeveynse token'i UID'nin altına kaydet
-                        userRef.child("token").setValue(tempToken).addOnCompleteListener(tokenTask -> {
-                            if (tokenTask.isSuccessful()) {
-                                Log.d("MainActivity", "Token ebeveyn UID'sine kaydedildi.");
-                                SharedPreferences.Editor editor = preferences.edit();
-                                editor.remove("tempToken");
-                                editor.apply();
-                            } else {
-                                Log.e("MainActivity", "Token ebeveyn UID'sine kaydedilemedi.");
-                            }
-                        });
-                    } else if ("Controlled".equals(currentUserRole)) {
-                        // Controlled kullanıcılar için ebeveyn UID'si altında kaydet
-                        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
-
-                        usersRef.get().addOnCompleteListener(parentTask -> {
-                            if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
-                                for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
-                                    if (parentSnapshot.child("children").hasChild(userId)) {
-                                        String parentUID = parentSnapshot.getKey();
-                                        Log.d("MainActivity", "Token Controlled UID'sine kaydediliyor. Parent UID: " + parentUID);
-
-                                        // Token'i ebeveynin altındaki çocuk düğümüne kaydet
-                                        DatabaseReference tokenRef = usersRef.child(parentUID).child("children").child(userId).child("token");
-                                        tokenRef.setValue(tempToken).addOnCompleteListener(tokenTask -> {
-                                            if (tokenTask.isSuccessful()) {
-                                                Log.d("MainActivity", "Token Controlled UID'sine kaydedildi.");
-                                                SharedPreferences.Editor editor = preferences.edit();
-                                                editor.remove("tempToken");
-                                                editor.apply();
-                                            } else {
-                                                Log.e("MainActivity", "Token Controlled UID'sine kaydedilemedi.");
-                                            }
-                                        });
-                                        break;
-                                    }
+                        if ("Parent".equals(role)) {
+                            // Ebeveynse token'i UID'nin altına kaydet
+                            userRef.child("token").setValue(tempToken).addOnCompleteListener(tokenTask -> {
+                                if (tokenTask.isSuccessful()) {
+                                    Log.d("MainActivity", "Token ebeveyn UID'sine kaydedildi.");
+                                    SharedPreferences.Editor editor = preferences.edit();
+                                    editor.remove("tempToken");
+                                    editor.apply();
+                                } else {
+                                    Log.e("MainActivity", "Token ebeveyn UID'sine kaydedilemedi.");
                                 }
-                            } else {
-                                Log.e("MainActivity", "Parent UID bulunamadı: " + parentTask.getException());
-                            }
-                        });
+                            });
+                        } else if ("Controlled".equals(role)) {
+                            // Controlled kullanıcılar için ebeveyn UID'si altında kaydet
+                            DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
+
+                            usersRef.get().addOnCompleteListener(parentTask -> {
+                                if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
+                                    for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
+                                        if (parentSnapshot.child("children").hasChild(userId)) {
+                                            String parentUID = parentSnapshot.getKey();
+
+                                            // Token'i ebeveynin altındaki çocuk düğümüne kaydet
+                                            DatabaseReference tokenRef = usersRef.child(parentUID).child("children").child(userId).child("token");
+                                            tokenRef.setValue(tempToken).addOnCompleteListener(tokenTask -> {
+                                                if (tokenTask.isSuccessful()) {
+                                                    Log.d("MainActivity", "Token Controlled UID'sine kaydedildi.");
+                                                    SharedPreferences.Editor editor = preferences.edit();
+                                                    editor.remove("tempToken");
+                                                    editor.apply();
+                                                } else {
+                                                    Log.e("MainActivity", "Token Controlled UID'sine kaydedilemedi.");
+                                                }
+                                            });
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    Log.e("MainActivity", "Parent UID bulunamadı: " + parentTask.getException());
+                                }
+                            });
+                        }
+                    } else {
+                        Log.e("MainActivity", "Rol alınamadı: " + task.getException());
                     }
-                } else {
-                    Log.e("MainActivity", "Kullanıcı bilgisi alınamadı (currentUser null).");
-                }
-            } else {
-                Log.e("MainActivity", "Rol bilgisi alınamadı, işlem yapılmadı.");
+                });
             }
-        } else {
-            Log.e("MainActivity", "Token bulunamadı, işlem yapılmadı.");
         }
     }
-
-
-
-
-
-
-
 
 }
 
