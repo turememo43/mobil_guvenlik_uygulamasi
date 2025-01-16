@@ -268,8 +268,13 @@ public class MainActivity extends AppCompatActivity {
                     DatabaseReference parentRef = FirebaseDatabase.getInstance().getReference("Users");
                     parentRef.get().addOnCompleteListener(parentTask -> {
                         if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
+                            boolean found = false; // UID bulundu mu kontrolü
                             for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
+                                Log.d("Token Debug", "ParentSnapshot Key: " + parentSnapshot.getKey());
+                                Log.d("Token Debug", "Children list: " + parentSnapshot.child("children").getValue());
+
                                 if (parentSnapshot.child("children").hasChild(userId)) {
+                                    found = true;
                                     String parentUID = parentSnapshot.getKey();
                                     DatabaseReference tokenRef = parentRef.child(parentUID).child("children").child(userId).child("token");
                                     tokenRef.setValue(tempToken).addOnCompleteListener(childTokenTask -> {
@@ -279,14 +284,17 @@ public class MainActivity extends AppCompatActivity {
                                             editor.apply();
                                             Log.d("Token", "Controlled token başarıyla kaydedildi.");
                                         } else {
-                                            Log.e("Token", "Controlled token kaydedilemedi.");
+                                            Log.e("Token", "Controlled token kaydedilemedi: " + childTokenTask.getException());
                                         }
                                     });
                                     break;
                                 }
                             }
+                            if (!found) {
+                                Log.e("Token", "Parent UID bulunamadı.");
+                            }
                         } else {
-                            Log.e("Token", "Parent UID bulunamadı.");
+                            Log.e("Token", "Parent kontrolü başarısız: " + parentTask.getException());
                         }
                     });
                 }
@@ -297,6 +305,7 @@ public class MainActivity extends AppCompatActivity {
             Log.e("Token", "Geçici token bulunamadı.");
         }
     }
+
 
 
 
