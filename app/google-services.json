@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "153475121712",
+    "firebase_url": "https://ebeveynuygulamasi-22c47-default-rtdb.firebaseio.com",
+    "project_id": "ebeveynuygulamasi-22c47",
+    "storage_bucket": "ebeveynuygulamasi-22c47.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:153475121712:android:43d2c7efa2f76f4eba63f5",
+        "android_client_info": {
+          "package_name": "com.mehmetture.mgu1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeNWm37HvS-5yX1kd0eFs6J-LDf9u5do4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

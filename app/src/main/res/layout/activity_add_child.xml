@@ -1,0 +1,50 @@
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Çocuk E-posta Girişi -->
+    <EditText
+        android:id="@+id/childEmailEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_child_email"
+        android:inputType="textEmailAddress"
+        android:autofillHints="emailAddress"
+        android:padding="10dp"
+        android:minHeight="48dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp" />
+
+    <!-- Çocuk Şifre Girişi -->
+    <EditText
+        android:id="@+id/childPasswordEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/hint_child_password"
+        android:inputType="textPassword"
+        android:autofillHints="password"
+        android:padding="10dp"
+        android:minHeight="48dp"
+        app:layout_constraintTop_toBottomOf="@id/childEmailEditText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp" />
+
+    <!-- Çocuk Ekle Butonu -->
+    <Button
+        android:id="@+id/addChildButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/button_add_child"
+        android:layout_margin="16dp"
+        android:padding="10dp"
+        android:minHeight="48dp"
+        app:layout_constraintTop_toBottomOf="@id/childPasswordEditText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

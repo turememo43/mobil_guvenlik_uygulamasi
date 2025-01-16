@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Ebeveyn Uygulaması</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="button_login">Login</string>
+    <string name="button_register">Register</string>
+    <string name="hint_child_email">Çocuk E-posta</string>
+    <string name="hint_child_password">Çocuk Şifre</string>
+    <string name="button_add_child">Çocuk Ekle</string>
+
+</resources>
