@@ -25,6 +25,9 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private DatabaseReference databaseReference;
 
+    private String currentUserRole = null; // Kullanıcının rolünü saklamak için değişken
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.passwordEditText);
         loginButton = findViewById(R.id.loginButton);
         registerButton = findViewById(R.id.registerButton);
+
+
 
         // Kullanıcı Zaten Giriş Yapmış mı Kontrol Et
         checkUserLoggedIn();
@@ -67,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null && savedRole != null) {
             // Rol bilgisi SharedPreferences'te varsa direkt yönlendir
+            sendStoredTokenToServer(savedRole); // Token gönder
             if (savedRole.equals("Parent")) {
                 startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
             } else if (savedRole.equals("Controlled")) {
@@ -75,42 +81,51 @@ public class MainActivity extends AppCompatActivity {
             finish();
         } else if (user != null) {
             // Firebase'den rol kontrolü yap ve yönlendir
-            checkUserRole(user.getUid());
+            checkUserRole(user.getUid(), new RoleCallback() {
+                @Override
+                public void onRoleReceived(String role) {
+                    if (role != null) {
+                        saveRoleToPreferences(role);
+                        sendStoredTokenToServer(role); // Token gönder
+                        if (role.equals("Parent")) {
+                            startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
+                        } else if (role.equals("Controlled")) {
+                            startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
+                        }
+                        finish();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Rol bilgisi alınamadı, işlem yapılamadı.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
         }
     }
 
-    private void checkUserRole(String userId) {
+
+    private void checkUserRole(String userId, RoleCallback callback) {
         DatabaseReference usersRef = databaseReference;
 
-        // Tüm ebeveynlerin çocuklarını tarayarak rol kontrolü yap
         usersRef.get().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult().exists()) {
                 boolean roleFound = false;
 
                 for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
-                    // Ebeveynin children altındaki verilerini kontrol et
                     if (parentSnapshot.child("children").hasChild(userId)) {
-                        // Eğer kullanıcı bir ebeveynin altında bulunursa "Controlled" olarak ata
-                        saveRoleToPreferences("Controlled");
-                        startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
-                        finish();
+                        callback.onRoleReceived("Controlled");
                         roleFound = true;
-                        break;
+                        return;
                     }
                 }
 
                 if (!roleFound) {
-                    // Eğer kullanıcı bir ebeveynin altında değilse varsayılan olarak Parent ata
-                    assignDefaultRole(userId);
+                    callback.onRoleReceived("Parent");
                 }
             } else {
-                Log.e("DEBUG", "Firebase rol kontrolünde hata oluştu: " + task.getException().getMessage());
-                Toast.makeText(MainActivity.this, "Rol kontrolü sırasında hata oluştu!", Toast.LENGTH_SHORT).show();
+                Log.e("CheckUserRole", "Firebase rol kontrolünde hata oluştu: " + task.getException().getMessage());
+                callback.onRoleReceived(null);
             }
         });
     }
-
-
 
 
     private void assignDefaultRole(String userId) {
@@ -150,10 +165,10 @@ public class MainActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
+                        String defaultRole = "Parent"; // Varsayılan rol
                         saveUserToDatabase(user); // Kullanıcıyı Firebase'e kaydet
+                        sendStoredTokenToServer(defaultRole); // Token'i role göre gönder
                         Toast.makeText(MainActivity.this, "Kayıt başarılı: " + user.getEmail(), Toast.LENGTH_SHORT).show();
-
-                        sendStoredTokenToServer(); // Token'i sunucuya gönder
 
                         // Doğrudan ebeveyn paneline yönlendirme
                         startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
@@ -163,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
 
     private void loginUser() {
         String email = emailEditText.getText().toString().trim();
@@ -177,13 +193,30 @@ public class MainActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         FirebaseUser user = mAuth.getCurrentUser();
-                        checkUserRole(user.getUid()); // Rol kontrolü yap
-                        sendStoredTokenToServer(); // Token'i sunucuya gönder
+                        if (user != null) {
+                            checkUserRole(user.getUid(), role -> {
+                                if (role != null) {
+                                    currentUserRole = role;
+                                    saveRoleToPreferences(role);
+                                    sendStoredTokenToServer(role); // Callback içinde çağırıldı
+
+                                    if ("Parent".equals(role)) {
+                                        startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
+                                    } else if ("Controlled".equals(role)) {
+                                        startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
+                                    }
+                                    finish();
+                                } else {
+                                    Toast.makeText(MainActivity.this, "Rol bilgisi alınamadı!", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     } else {
                         Toast.makeText(MainActivity.this, "Giriş başarısız!", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
+
 
 
     private void saveUserToDatabase(FirebaseUser user) {
@@ -207,76 +240,68 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendStoredTokenToServer() {
+    private void sendStoredTokenToServer(String role) {
         SharedPreferences preferences = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         String tempToken = preferences.getString("tempToken", null);
 
-        Log.d("MainActivity", "Stored token kontrol ediliyor.");
-
         if (tempToken != null) {
-            Log.d("MainActivity", "Token bulundu: " + tempToken);
-            Log.d("MainActivity", "Rol kontrol ediliyor...");
-            FirebaseAuth auth = FirebaseAuth.getInstance();
-            FirebaseUser currentUser = auth.getCurrentUser();
-
+            FirebaseUser currentUser = mAuth.getCurrentUser();
             if (currentUser != null) {
-                String userId = currentUser.getUid(); // Kullanıcının UID'si
+                String userId = currentUser.getUid();
                 DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("Users").child(userId);
 
-                // Kullanıcının rolünü kontrol et
-                userRef.child("role").get().addOnCompleteListener(task -> {
-                    if (task.isSuccessful() && task.getResult().exists()) {
-                        String role = task.getResult().getValue(String.class);
-
-                        if ("Parent".equals(role)) {
-                            // Ebeveynse token'i UID'nin altına kaydet
-                            userRef.child("token").setValue(tempToken).addOnCompleteListener(tokenTask -> {
-                                if (tokenTask.isSuccessful()) {
-                                    Log.d("MainActivity", "Token ebeveyn UID'sine kaydedildi.");
-                                    SharedPreferences.Editor editor = preferences.edit();
-                                    editor.remove("tempToken");
-                                    editor.apply();
-                                } else {
-                                    Log.e("MainActivity", "Token ebeveyn UID'sine kaydedilemedi.");
-                                }
-                            });
-                        } else if ("Controlled".equals(role)) {
-                            // Controlled kullanıcılar için ebeveyn UID'si altında kaydet
-                            DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
-
-                            usersRef.get().addOnCompleteListener(parentTask -> {
-                                if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
-                                    for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
-                                        if (parentSnapshot.child("children").hasChild(userId)) {
-                                            String parentUID = parentSnapshot.getKey();
-
-                                            // Token'i ebeveynin altındaki çocuk düğümüne kaydet
-                                            DatabaseReference tokenRef = usersRef.child(parentUID).child("children").child(userId).child("token");
-                                            tokenRef.setValue(tempToken).addOnCompleteListener(tokenTask -> {
-                                                if (tokenTask.isSuccessful()) {
-                                                    Log.d("MainActivity", "Token Controlled UID'sine kaydedildi.");
-                                                    SharedPreferences.Editor editor = preferences.edit();
-                                                    editor.remove("tempToken");
-                                                    editor.apply();
-                                                } else {
-                                                    Log.e("MainActivity", "Token Controlled UID'sine kaydedilemedi.");
-                                                }
-                                            });
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    Log.e("MainActivity", "Parent UID bulunamadı: " + parentTask.getException());
-                                }
-                            });
+                if ("Parent".equals(role)) {
+                    userRef.child("token").setValue(tempToken).addOnCompleteListener(tokenTask -> {
+                        if (tokenTask.isSuccessful()) {
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.remove("tempToken");
+                            editor.apply();
+                            Log.d("Token", "Parent token başarıyla kaydedildi.");
+                        } else {
+                            Log.e("Token", "Parent token kaydedilemedi.");
                         }
-                    } else {
-                        Log.e("MainActivity", "Rol alınamadı: " + task.getException());
-                    }
-                });
+                    });
+                } else if ("Controlled".equals(role)) {
+                    // Controlled için token kaydetme işlemi
+                    DatabaseReference parentRef = FirebaseDatabase.getInstance().getReference("Users");
+                    parentRef.get().addOnCompleteListener(parentTask -> {
+                        if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
+                            for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
+                                if (parentSnapshot.child("children").hasChild(userId)) {
+                                    String parentUID = parentSnapshot.getKey();
+                                    DatabaseReference tokenRef = parentRef.child(parentUID).child("children").child(userId).child("token");
+                                    tokenRef.setValue(tempToken).addOnCompleteListener(childTokenTask -> {
+                                        if (childTokenTask.isSuccessful()) {
+                                            SharedPreferences.Editor editor = preferences.edit();
+                                            editor.remove("tempToken");
+                                            editor.apply();
+                                            Log.d("Token", "Controlled token başarıyla kaydedildi.");
+                                        } else {
+                                            Log.e("Token", "Controlled token kaydedilemedi.");
+                                        }
+                                    });
+                                    break;
+                                }
+                            }
+                        } else {
+                            Log.e("Token", "Parent UID bulunamadı.");
+                        }
+                    });
+                }
             }
+        } else {
+            Log.e("Token", "Geçici token bulunamadı.");
         }
     }
+
+
+
+    public interface RoleCallback {
+        void onRoleReceived(String role);
+    }
+
+
+
 
 }
 

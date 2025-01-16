@@ -22,68 +22,19 @@ import androidx.core.app.NotificationCompat;
 import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
-
     @Override
-    public void onNewToken(@NonNull String token) {
+    public void onNewToken(String token) {
         super.onNewToken(token);
-        Log.d("MyFirebaseMessagingService", "Yeni token: " + token);
-
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = auth.getCurrentUser();
-
-        if (currentUser != null) {
-            // Kullanıcı giriş yapmışsa token'i sunucuya gönder
-            sendTokenToServer(token);
-        } else {
-            // Kullanıcı giriş yapmamışsa token'i geçici olarak sakla
-            saveTokenToPreferences(token);
-        }
-    }
-
-    private void saveTokenToPreferences(String token) {
+        Log.d("FirebaseToken", "Yeni token alındı: " + token);
+        // Token'ı SharedPreferences'a kaydet
         SharedPreferences preferences = getSharedPreferences("AppPrefs", MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putString("tempToken", token);
         editor.apply();
-        Log.d("MyFirebaseMessagingService", "Token geçici olarak saklandı.");
     }
 
-    private void sendTokenToServer(String token) {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = auth.getCurrentUser();
 
-        if (currentUser != null) {
-            String childId = currentUser.getUid(); // Çocuğun UID'sini al
-            DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
 
-            // Parent UID'sini bulmak için tüm kullanıcıları kontrol et
-            usersRef.get().addOnCompleteListener(task -> {
-                if (task.isSuccessful() && task.getResult().exists()) {
-                    for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
-                        if (parentSnapshot.child("children").hasChild(childId)) {
-                            // Parent UID bulundu
-                            String parentUID = parentSnapshot.getKey();
-
-                            // Token bilgisini doğru yere kaydet
-                            DatabaseReference tokenRef = usersRef.child(parentUID).child("children").child(childId).child("token");
-                            tokenRef.setValue(token).addOnCompleteListener(tokenTask -> {
-                                if (tokenTask.isSuccessful()) {
-                                    Log.d("FCM Token", "Token başarıyla kaydedildi: " + token);
-                                } else {
-                                    Log.e("FCM Token", "Token kaydedilemedi!");
-                                }
-                            });
-                            break;
-                        }
-                    }
-                } else {
-                    Log.e("FCM Token", "Parent UID bulunamadı: " + task.getException());
-                }
-            });
-        } else {
-            Log.e("FCM Token", "Kullanıcı oturumu yok, token kaydedilemedi!");
-        }
-    }
 
 
     @Override
