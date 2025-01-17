@@ -12,6 +12,11 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,20 +25,25 @@ public class ChildSendNotificationActivity extends AppCompatActivity {
 
     private EditText titleEditText, messageEditText;
     private Button sendButton;
-    private String parentToken; // Ebeveynin tokeni
+    private String parentToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_child_send_notification);
 
-        // Intent ile gelen ebeveyn tokenini al
-        parentToken = getIntent().getStringExtra("parentToken");
-        Log.d("DEBUG", "Parent Token: " + parentToken);
-        if (parentToken == null || parentToken.isEmpty()) {
-            Toast.makeText(this, "Ebeveyn tokeni bulunamadı!", Toast.LENGTH_SHORT).show();
+        // Firebase Auth
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+
+        if (currentUser == null) {
+            Toast.makeText(this, "Kullanıcı oturum açmamış!", Toast.LENGTH_SHORT).show();
             finish();
+            return;
         }
+
+        String childUID = currentUser.getUid();
+        getParentToken(childUID);
 
         // View'ları bağlama
         titleEditText = findViewById(R.id.titleEditText);
@@ -50,10 +60,33 @@ public class ChildSendNotificationActivity extends AppCompatActivity {
                 return;
             }
 
-            Log.d("DEBUG", "Parent Token: " + parentToken);
+            if (parentToken == null || parentToken.isEmpty()) {
+                Toast.makeText(ChildSendNotificationActivity.this, "Ebeveyn tokeni bulunamadı!", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             // Bildirim gönderme
             sendNotification(title, message, parentToken);
+        });
+    }
+
+    private void getParentToken(String childUID) {
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("Users");
+        databaseReference.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult().exists()) {
+                for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
+                    if (parentSnapshot.child("children").hasChild(childUID)) {
+                        parentToken = parentSnapshot.child("token").getValue(String.class);
+                        Log.d("Child Notification", "Parent Token: " + parentToken);
+                        return;
+                    }
+                }
+                Log.e("Child Notification", "Ebeveyn tokeni bulunamadı!");
+                Toast.makeText(this, "Ebeveyn tokeni alınamadı!", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.e("Child Notification", "Firebase'den ebeveyn tokeni alınamadı: " + task.getException());
+                Toast.makeText(this, "Firebase hatası!", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -71,11 +104,11 @@ public class ChildSendNotificationActivity extends AppCompatActivity {
                     url,
                     notificationData,
                     response -> {
-                        Log.d("Notification", "Bildirim başarıyla gönderildi: " + response.toString());
+                        Log.d("Child Notification", "Bildirim başarıyla gönderildi: " + response.toString());
                         Toast.makeText(ChildSendNotificationActivity.this, "Bildirim başarıyla gönderildi!", Toast.LENGTH_SHORT).show();
                     },
                     error -> {
-                        Log.e("Notification", "Bildirim gönderilirken hata oluştu: " + error.getMessage());
+                        Log.e("Child Notification", "Bildirim gönderilirken hata oluştu: " + error.getMessage());
                         Toast.makeText(ChildSendNotificationActivity.this, "Hata: Bildirim gönderilemedi!", Toast.LENGTH_SHORT).show();
                     }
             );
