@@ -91,6 +91,8 @@ public class AddChildActivity extends AppCompatActivity {
                         if (childUser != null) {
                             Log.d("DEBUG", "Çocuk kullanıcısı oluşturuldu: " + childUser.getUid());
                             saveChildToParent(childUser.getUid(), childEmail);
+                            Intent intent = new Intent(this, ChildLocationService.class);
+                            startService(intent);
                         }
                     } else {
                         Toast.makeText(this, "Çocuk eklenirken hata oluştu!", Toast.LENGTH_SHORT).show();

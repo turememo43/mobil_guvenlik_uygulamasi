@@ -3,6 +3,7 @@ package com.mehmetture.mgu1;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,15 +14,16 @@ import java.util.List;
 public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ChildViewHolder> {
 
     private List<Child> childList;
-    private OnChildClickListener onChildClickListener;
+    private OnChildActionListener onChildActionListener;
 
-    public interface OnChildClickListener {
-        void onChildClick(Child child);
+    public interface OnChildActionListener {
+        void onSendNotification(Child child);
+        void onViewLocation(Child child);
     }
 
-    public ChildAdapter(List<Child> childList, OnChildClickListener onChildClickListener) {
+    public ChildAdapter(List<Child> childList, OnChildActionListener onChildActionListener) {
         this.childList = childList;
-        this.onChildClickListener = onChildClickListener;
+        this.onChildActionListener = onChildActionListener;
     }
 
     @NonNull
@@ -37,10 +39,17 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ChildViewHol
         holder.emailTextView.setText(child.getEmail());
         holder.roleTextView.setText(child.getRole());
 
-        // Tıklama olayı
-        holder.itemView.setOnClickListener(v -> {
-            if (onChildClickListener != null) {
-                onChildClickListener.onChildClick(child);
+        // Bildirim Gönderme Butonu
+        holder.sendNotificationButton.setOnClickListener(v -> {
+            if (onChildActionListener != null) {
+                onChildActionListener.onSendNotification(child);
+            }
+        });
+
+        // Konumu Görme Butonu
+        holder.viewLocationButton.setOnClickListener(v -> {
+            if (onChildActionListener != null) {
+                onChildActionListener.onViewLocation(child);
             }
         });
     }
@@ -52,11 +61,14 @@ public class ChildAdapter extends RecyclerView.Adapter<ChildAdapter.ChildViewHol
 
     public static class ChildViewHolder extends RecyclerView.ViewHolder {
         TextView emailTextView, roleTextView;
+        Button sendNotificationButton, viewLocationButton;
 
         public ChildViewHolder(@NonNull View itemView) {
             super(itemView);
             emailTextView = itemView.findViewById(R.id.childEmailTextView);
             roleTextView = itemView.findViewById(R.id.childRoleTextView);
+            sendNotificationButton = itemView.findViewById(R.id.sendNotificationButton);
+            viewLocationButton = itemView.findViewById(R.id.viewLocationButton);
         }
     }
 }

@@ -3,6 +3,8 @@
     package="com.mehmetture.mgu1">
     <!-- INTERNET İzni -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -13,18 +15,25 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Mgu1">
         <activity
+            android:name=".ViewLocationActivity"
+            android:exported="false" />
+        <activity
             android:name=".ChildSendNotificationActivity"
             android:exported="false" />
+
         <activity
             android:name=".SendNotificationActivity"
             android:exported="false" /> <!-- Firebase Messaging Servisi -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="true">
+
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-        </service> <!-- Aktiviteler -->
+        </service>
+        <service android:name=".ChildLocationService" />
+        <!-- Aktiviteler -->
         <activity
             android:name=".ViewChildrenActivity"
             android:exported="false" />
