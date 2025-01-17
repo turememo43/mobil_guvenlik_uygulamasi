@@ -19,7 +19,7 @@ public class ControlledDashboardActivity extends AppCompatActivity {
         // FAB tıklama olayını ekle
         fab.setOnClickListener(v -> {
             // SendNotificationActivity'ye yönlendir
-            Intent intent = new Intent(this, SendNotificationActivity.class);
+            Intent intent = new Intent(this, ChildSendNotificationActivity.class);
             startActivity(intent);
         });
     }

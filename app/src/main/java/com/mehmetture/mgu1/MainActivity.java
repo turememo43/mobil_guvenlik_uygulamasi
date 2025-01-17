@@ -199,14 +199,14 @@ public class MainActivity extends AppCompatActivity {
                         if (user != null) {
                             checkUserRole(user.getUid(), role -> {
                                 if (role != null) {
-                                    currentUserRole = role;
                                     saveRoleToPreferences(role);
 
-                                    // Role göre yönlendirme
-                                    if ("Parent".equals(role)) {
-                                        startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
-                                    } else if ("Controlled".equals(role)) {
+                                    // Eğer kullanıcı çocuksa token atama işlemi yapılır
+                                    if ("Controlled".equals(role)) {
+                                        assignChildTokenOnLogin(user.getUid());
                                         startActivity(new Intent(MainActivity.this, ControlledDashboardActivity.class));
+                                    } else if ("Parent".equals(role)) {
+                                        startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
                                     }
                                     finish();
                                 } else {
@@ -219,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
 
 
 
@@ -244,41 +245,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendChildTokenToServer(String role, String tempToken) {
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            String userId = currentUser.getUid();
-            DatabaseReference parentRef = FirebaseDatabase.getInstance().getReference("Users");
 
-            parentRef.get().addOnCompleteListener(parentTask -> {
-                if (parentTask.isSuccessful() && parentTask.getResult().exists()) {
-                    boolean found = false; // UID bulundu mu kontrolü
-                    for (DataSnapshot parentSnapshot : parentTask.getResult().getChildren()) {
-                        if (parentSnapshot.child("children").hasChild(userId)) {
-                            found = true;
-                            String parentUID = parentSnapshot.getKey();
-                            DatabaseReference tokenRef = parentRef.child(parentUID).child("children").child(userId).child("token");
-                            tokenRef.setValue(tempToken).addOnCompleteListener(childTokenTask -> {
-                                if (childTokenTask.isSuccessful()) {
-                                    Log.d("Token", "Controlled token başarıyla kaydedildi.");
-                                } else {
-                                    Log.e("Token", "Controlled token kaydedilemedi: " + childTokenTask.getException());
-                                }
-                            });
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        Log.e("Token", "Parent UID bulunamadı.");
-                    }
-                } else {
-                    Log.e("Token", "Parent kontrolü başarısız: " + parentTask.getException());
-                }
-            });
-        } else {
-            Log.e("Token", "Kullanıcı bilgisi alınamadı (currentUser null).");
-        }
-    }
 
 
     private void sendParentTokenToServer() {
@@ -313,6 +280,39 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    private void assignChildTokenOnLogin(String userId) {
+        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
+
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult().exists()) {
+                for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
+                    // Çocuğun hangi ebeveynin altında olduğunu buluyoruz
+                    if (parentSnapshot.child("children").hasChild(userId)) {
+                        String parentId = parentSnapshot.getKey();
+                        DatabaseReference childRef = usersRef.child(parentId).child("children").child(userId).child("token");
+
+                        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(tokenTask -> {
+                            if (tokenTask.isSuccessful() && tokenTask.getResult() != null) {
+                                String childToken = tokenTask.getResult();
+                                childRef.setValue(childToken).addOnCompleteListener(tokenSaveTask -> {
+                                    if (tokenSaveTask.isSuccessful()) {
+                                        Log.d("DEBUG", "Çocuk için token başarıyla kaydedildi.");
+                                    } else {
+                                        Log.e("DEBUG", "Çocuk token kaydedilemedi: " + tokenSaveTask.getException());
+                                    }
+                                });
+                            } else {
+                                Log.e("DEBUG", "Çocuk için token oluşturulamadı: " + tokenTask.getException());
+                            }
+                        });
+                        break;
+                    }
+                }
+            } else {
+                Log.e("DEBUG", "Ebeveyn kontrolü başarısız: " + task.getException());
+            }
+        });
+    }
 
 
 

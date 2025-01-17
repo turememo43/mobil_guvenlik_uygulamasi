@@ -106,29 +106,6 @@ public class AddChildActivity extends AppCompatActivity {
         parentRef.child("role").setValue("Controlled").addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 Log.d("DEBUG", "Çocuk ebeveyn altına eklendi.");
-
-                // Mevcut tokeni sil ve yeni bir token oluştur
-                FirebaseMessaging.getInstance().deleteToken().addOnCompleteListener(deleteTask -> {
-                    if (deleteTask.isSuccessful()) {
-                        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(tokenTask -> {
-                            if (tokenTask.isSuccessful() && tokenTask.getResult() != null) {
-                                String childToken = tokenTask.getResult();
-                                parentRef.child("token").setValue(childToken).addOnCompleteListener(tokenSaveTask -> {
-                                    if (tokenSaveTask.isSuccessful()) {
-                                        Log.d("DEBUG", "Çocuk için yeni token başarıyla kaydedildi.");
-                                    } else {
-                                        Log.e("DEBUG", "Çocuk token kaydedilemedi: " + tokenSaveTask.getException());
-                                    }
-                                });
-                            } else {
-                                Log.e("DEBUG", "Çocuk için token oluşturulamadı: " + tokenTask.getException());
-                            }
-                        });
-                    } else {
-                        Log.e("DEBUG", "Token silinemedi: " + deleteTask.getException());
-                    }
-                });
-
                 incrementChildCount();
                 restoreParentSession();
             } else {
@@ -136,6 +113,7 @@ public class AddChildActivity extends AppCompatActivity {
             }
         });
     }
+
 
 
     // Çocuk sayısını artır

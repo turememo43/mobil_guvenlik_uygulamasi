@@ -16,22 +16,22 @@ import com.android.volley.toolbox.Volley;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class SendNotificationActivity extends AppCompatActivity {
+public class ChildSendNotificationActivity extends AppCompatActivity {
 
     private EditText titleEditText, messageEditText;
     private Button sendButton;
-    private String targetToken;
+    private String parentToken; // Ebeveynin tokeni
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_send_notification);
+        setContentView(R.layout.activity_child_send_notification);
 
-        // Intent ile gelen hedef token
-        targetToken = getIntent().getStringExtra("targetToken");
-        Log.d("DEBUG", "Target Token: " + targetToken);
-        if (targetToken == null || targetToken.isEmpty()) {
-            Toast.makeText(this, "Hedef token bulunamadıı!", Toast.LENGTH_SHORT).show();
+        // Intent ile gelen ebeveyn tokenini al
+        parentToken = getIntent().getStringExtra("parentToken");
+        Log.d("DEBUG", "Parent Token: " + parentToken);
+        if (parentToken == null || parentToken.isEmpty()) {
+            Toast.makeText(this, "Ebeveyn tokeni bulunamadı!", Toast.LENGTH_SHORT).show();
             finish();
         }
 
@@ -46,14 +46,14 @@ public class SendNotificationActivity extends AppCompatActivity {
             String message = messageEditText.getText().toString().trim();
 
             if (title.isEmpty() || message.isEmpty()) {
-                Toast.makeText(SendNotificationActivity.this, "Başlık ve mesaj boş bırakılamaz!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(ChildSendNotificationActivity.this, "Başlık ve mesaj boş bırakılamaz!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            Log.d("DEBUG", "Target Token: " + targetToken);
+            Log.d("DEBUG", "Parent Token: " + parentToken);
 
             // Bildirim gönderme
-            sendNotification(title, message, targetToken);
+            sendNotification(title, message, parentToken);
         });
     }
 
@@ -72,11 +72,11 @@ public class SendNotificationActivity extends AppCompatActivity {
                     notificationData,
                     response -> {
                         Log.d("Notification", "Bildirim başarıyla gönderildi: " + response.toString());
-                        Toast.makeText(SendNotificationActivity.this, "Bildirim başarıyla gönderildi!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChildSendNotificationActivity.this, "Bildirim başarıyla gönderildi!", Toast.LENGTH_SHORT).show();
                     },
                     error -> {
                         Log.e("Notification", "Bildirim gönderilirken hata oluştu: " + error.getMessage());
-                        Toast.makeText(SendNotificationActivity.this, "Hata: Bildirim gönderilemedi!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChildSendNotificationActivity.this, "Hata: Bildirim gönderilemedi!", Toast.LENGTH_SHORT).show();
                     }
             );
 

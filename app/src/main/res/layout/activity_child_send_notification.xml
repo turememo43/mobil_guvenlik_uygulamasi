@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <!-- Başlık Giriş Alanı -->
+    <EditText
+        android:id="@+id/titleEditText"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Başlık"
+        android:inputType="textCapSentences"
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Mesaj Giriş Alanı -->
+    <EditText
+        android:id="@+id/messageEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Mesaj"
+        android:inputType="textMultiLine"
+        android:lines="5"
+        android:minHeight="48dp"
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:gravity="top"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Bildirim Gönder Butonu -->
+    <Button
+        android:id="@+id/sendButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Gönder"
+        android:textSize="16sp"
+        android:background="@color/purple_500"
+        android:textColor="@android:color/white"
+        android:padding="12dp" />
+
+</LinearLayout>
