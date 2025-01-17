@@ -200,8 +200,8 @@ public class MainActivity extends AppCompatActivity {
                                 if (role != null) {
                                     currentUserRole = role;
                                     saveRoleToPreferences(role);
-                                    sendStoredTokenToServer(role); // Callback içinde çağırıldı
 
+                                    // Role göre yönlendirme
                                     if ("Parent".equals(role)) {
                                         startActivity(new Intent(MainActivity.this, ParentDashboardActivity.class));
                                     } else if ("Controlled".equals(role)) {
@@ -218,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
 
 
 

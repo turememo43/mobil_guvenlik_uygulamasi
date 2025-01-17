@@ -15,6 +15,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class AddChildActivity extends AppCompatActivity {
 
@@ -105,8 +106,28 @@ public class AddChildActivity extends AppCompatActivity {
         parentRef.child("role").setValue("Controlled").addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 Log.d("DEBUG", "Çocuk ebeveyn altına eklendi.");
+
+                // Token oluştur ve çocuğun altına kaydet
+                FirebaseMessaging.getInstance().getToken().addOnCompleteListener(tokenTask -> {
+                    if (tokenTask.isSuccessful() && tokenTask.getResult() != null) {
+                        String childToken = tokenTask.getResult() + "_" + System.currentTimeMillis(); // Benzersiz token yarat
+                        parentRef.child("token").setValue(childToken).addOnCompleteListener(tokenSaveTask -> {
+                            if (tokenSaveTask.isSuccessful()) {
+                                Log.d("DEBUG", "Çocuğun token'ı başarıyla kaydedildi.");
+                            } else {
+                                Log.e("DEBUG", "Çocuğun token'ı kaydedilemedi: " + tokenSaveTask.getException());
+                            }
+                        });
+                    } else {
+                        Log.e("DEBUG", "Token alınamadı: " + tokenTask.getException());
+                    }
+                });
+
+
                 incrementChildCount();
                 restoreParentSession();
+            } else {
+                Log.e("DEBUG", "Çocuk ebeveyn altına eklenemedi: " + task.getException());
             }
         });
     }
