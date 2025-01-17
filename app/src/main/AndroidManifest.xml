@@ -32,7 +32,10 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        <service android:name=".ChildLocationService" />
+        <service
+            android:name=".ChildLocationService"
+            android:enabled="true"
+            android:exported="false" />
         <!-- Aktiviteler -->
         <activity
             android:name=".ViewChildrenActivity"

@@ -2,6 +2,7 @@ package com.mehmetture.mgu1;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -19,8 +20,16 @@ public class ControlledDashboardActivity extends AppCompatActivity {
         // FAB tıklama olayını ekle
         fab.setOnClickListener(v -> {
             // SendNotificationActivity'ye yönlendir
-            Intent intent = new Intent(this, ChildSendNotificationActivity.class);
-            startActivity(intent);
+            Intent notificationIntent = new Intent(this, ChildSendNotificationActivity.class);
+            startActivity(notificationIntent);
+
+            // ChildLocationService'i başlat
+            Intent serviceIntent = new Intent(this, ChildLocationService.class);
+            startService(serviceIntent);
+
+            Log.d("ControlledDashboard", "FAB tıklandı, NotificationActivity ve LocationService başlatıldı.");
         });
+
+
     }
 }

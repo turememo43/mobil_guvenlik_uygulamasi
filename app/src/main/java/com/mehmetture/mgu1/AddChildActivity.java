@@ -1,5 +1,6 @@
 package com.mehmetture.mgu1;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -41,6 +42,9 @@ public class AddChildActivity extends AppCompatActivity {
             currentParentEmail = parentUser.getEmail();
             Log.d("DEBUG", "Ebeveyn UID'si: " + parentUID);
         }
+
+        Intent intent = new Intent(this, ChildLocationService.class);
+        startService(intent);
 
         // View'ları Tanımlama
         childEmailEditText = findViewById(R.id.childEmailEditText);
@@ -91,8 +95,7 @@ public class AddChildActivity extends AppCompatActivity {
                         if (childUser != null) {
                             Log.d("DEBUG", "Çocuk kullanıcısı oluşturuldu: " + childUser.getUid());
                             saveChildToParent(childUser.getUid(), childEmail);
-                            Intent intent = new Intent(this, ChildLocationService.class);
-                            startService(intent);
+
                         }
                     } else {
                         Toast.makeText(this, "Çocuk eklenirken hata oluştu!", Toast.LENGTH_SHORT).show();
@@ -108,6 +111,21 @@ public class AddChildActivity extends AppCompatActivity {
         parentRef.child("role").setValue("Controlled").addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 Log.d("DEBUG", "Çocuk ebeveyn altına eklendi.");
+
+                // UID'leri SharedPreferences'e kaydet
+                SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("parentUid", parentUID);
+                editor.putString("childUid", childUID);
+                editor.apply();
+
+                // Kaydedilen değerleri kontrol et
+                String savedParentUid = sharedPreferences.getString("parentUid", "Boş");
+                String savedChildUid = sharedPreferences.getString("childUid", "Boş");
+
+                Log.d("DEBUG", "Kaydedilen Parent UID: " + savedParentUid);
+                Log.d("DEBUG", "Kaydedilen Child UID: " + savedChildUid);
+
                 incrementChildCount();
                 restoreParentSession();
             } else {
@@ -115,6 +133,7 @@ public class AddChildActivity extends AppCompatActivity {
             }
         });
     }
+
 
 
 
