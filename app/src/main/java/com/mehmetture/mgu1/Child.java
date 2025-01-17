@@ -3,19 +3,18 @@ package com.mehmetture.mgu1;
 public class Child {
     private String email;
     private String role;
-    private String uid; // UID alanı
+    private String uid;
+    private String token;
 
-    // Boş constructor (Firebase için gerekli)
-    public Child() {}
-
-    // Parametreli constructor
-    public Child(String email, String role, String uid) {
+    // Yapıcı metod
+    public Child(String email, String role, String uid, String token) {
         this.email = email;
         this.role = role;
         this.uid = uid;
+        this.token = token;
     }
 
-    // Getter ve Setter metodları
+    // Get ve Set metodları
     public String getEmail() {
         return email;
     }
@@ -38,5 +37,13 @@ public class Child {
 
     public void setUid(String uid) {
         this.uid = uid;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

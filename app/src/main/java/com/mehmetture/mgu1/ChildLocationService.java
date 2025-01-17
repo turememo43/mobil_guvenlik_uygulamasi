@@ -36,8 +36,7 @@ public class ChildLocationService extends Service {
         Log.d(TAG, "Service onCreate called.");
 
         // Dinamik olarak Parent ve Child UID'leri Firebase'den al
-        fetchParentUidFromFirebase();
-        fetchChildUidFromFirebase();
+
 
         // İzin kontrolü ve konum güncellemelerini başlat
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -121,6 +120,7 @@ public class ChildLocationService extends Service {
         }
     }
 
+
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -147,78 +147,6 @@ public class ChildLocationService extends Service {
             this.longitude = longitude;
         }
     }
-
-    private void fetchChildUidFromFirebase() {
-        Log.d(TAG, "fetchChildUidFromFirebase çağrıldı.");
-
-        String parentUID = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("parentUid", null);
-
-        if (parentUID == null) {
-            Log.e(TAG, "Parent UID SharedPreferences'te bulunamadı. Child UID alınamayacak.");
-            fetchParentUidFromFirebase(); // Parent UID'yi bulmaya çalış
-            return;
-        }
-
-        DatabaseReference childrenRef = FirebaseDatabase.getInstance().getReference("Users")
-                .child(parentUID)
-                .child("children");
-
-        childrenRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                for (DataSnapshot childSnapshot : task.getResult().getChildren()) {
-                    String childUID = childSnapshot.getKey();
-                    Log.d(TAG, "Firebase'den alınan Child UID: " + childUID);
-
-                    // SharedPreferences'e kaydet
-                    SharedPreferences.Editor editor = getSharedPreferences("UserPrefs", MODE_PRIVATE).edit();
-                    editor.putString("childUid", childUID);
-                    editor.apply();
-
-                    Log.d(TAG, "Child UID SharedPreferences'e kaydedildi: " + childUID);
-                    return;
-                }
-                Log.e(TAG, "Child UID Firebase'de bulunamadı.");
-            } else {
-                Log.e(TAG, "Firebase'den Child UID alınamadı.", task.getException());
-            }
-        });
-    }
-
-    private void fetchParentUidFromFirebase() {
-        Log.d(TAG, "fetchParentUidFromFirebase çağrıldı.");
-
-        String childUID = getSharedPreferences("UserPrefs", MODE_PRIVATE).getString("childUid", null);
-
-        if (childUID == null) {
-            Log.e(TAG, "Child UID SharedPreferences'te bulunamadı. Parent UID alınamayacak.");
-            return;
-        }
-
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("Users");
-        usersRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                for (DataSnapshot parentSnapshot : task.getResult().getChildren()) {
-                    if (parentSnapshot.child("children").hasChild(childUID)) {
-                        String parentUID = parentSnapshot.getKey();
-                        Log.d(TAG, "Firebase'den Parent UID bulundu: " + parentUID);
-
-                        // SharedPreferences'e kaydet
-                        SharedPreferences.Editor editor = getSharedPreferences("UserPrefs", MODE_PRIVATE).edit();
-                        editor.putString("parentUid", parentUID);
-                        editor.apply();
-
-                        Log.d(TAG, "Parent UID SharedPreferences'e kaydedildi: " + parentUID);
-                        return;
-                    }
-                }
-                Log.e(TAG, "Parent UID Firebase'de bulunamadı.");
-            } else {
-                Log.e(TAG, "Firebase'den Parent UID alınamadı.", task.getException());
-            }
-        });
-    }
-
-
 
 
 

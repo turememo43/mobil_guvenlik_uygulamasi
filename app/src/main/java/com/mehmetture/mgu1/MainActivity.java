@@ -291,6 +291,14 @@ public class MainActivity extends AppCompatActivity {
                         String parentId = parentSnapshot.getKey();
                         DatabaseReference childRef = usersRef.child(parentId).child("children").child(userId).child("token");
 
+                        // SharedPreferences'e Parent UID'yi kaydet
+                        SharedPreferences.Editor editor = getSharedPreferences("UserPrefs", MODE_PRIVATE).edit();
+                        editor.putString("parentUid", parentId); // Parent UID kaydediliyor
+                        editor.putString("childUid", userId);   // Child UID kaydediliyor
+                        editor.apply();
+
+                        Log.d("DEBUG", "Parent UID ve Child UID SharedPreferences'e kaydedildi.");
+
                         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(tokenTask -> {
                             if (tokenTask.isSuccessful() && tokenTask.getResult() != null) {
                                 String childToken = tokenTask.getResult();
@@ -313,6 +321,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
 
 
 
